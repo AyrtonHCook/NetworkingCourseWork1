@@ -1,5 +1,4 @@
 import CMPC3M06.AudioPlayer;
-import javax.sound.sampled.*;
 /*
  * TextReceiver.java
  */
@@ -7,8 +6,7 @@ import javax.sound.sampled.*;
 import javax.sound.sampled.LineUnavailableException;
 import java.io.IOException;
 import java.net.*;
-
-import java.io.*;
+import java.nio.ByteBuffer;
 
 public class AudioReceiver implements Runnable{
     
@@ -50,17 +48,32 @@ public class AudioReceiver implements Runnable{
 
 
         boolean running = true;
-        
+        int key = 15;
         while (running){
          
             try{
 
+                
+
                 byte[] buffer = new byte[512];
                 DatagramPacket packet = new DatagramPacket(buffer, 0, 512);
-
                 receiving_socket.receive(packet);
+
+                byte[] encrypted = packet.getData();
+                int len = packet.getLength();
+
+                ByteBuffer unwrapDecrypt = ByteBuffer.allocate(len);
+                ByteBuffer cipherText = ByteBuffer.wrap(encrypted);
+
+                for(int j = 0; j < len/4; j++) {
+                    int fourByte = cipherText.getInt();
+                    fourByte = fourByte ^ key;
+                    unwrapDecrypt.putInt(fourByte);
+                    }
+
+                byte[] decryptedBlock = unwrapDecrypt.array();
                 
-                player.playBlock(packet.getData());
+                player.playBlock(decryptedBlock);
 
             } catch (IOException e){
                 System.out.println("ERROR: TextReceiver: Some random IO error occured!");
