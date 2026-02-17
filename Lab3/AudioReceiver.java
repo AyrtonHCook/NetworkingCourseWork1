@@ -8,9 +8,8 @@
  */
 import java.net.*;
 import java.io.*;
-import CMPC3M06.AudioPlayer;
 
-public class TextReceiverThread implements Runnable{
+public class AudioReceiver implements Runnable{
     
     static DatagramSocket receiving_socket;
     
@@ -42,7 +41,6 @@ public class TextReceiverThread implements Runnable{
         //***************************************************
         //Main loop.
         
-        // create audio player
         AudioPlayer player = null;
         try{
             player = new AudioPlayer();
@@ -50,17 +48,20 @@ public class TextReceiverThread implements Runnable{
             System.out.println("Error: cannot open audio player");
         }
 
+
         boolean running = true;
         
         while (running){
-            byte[] buffer = new byte[512];
-            DatagramPacket packet = new DatagramPacket(buffer, 0, 512);
-
+         
             try{
 
+                byte[] buffer = new byte[512];
+                DatagramPacket packet = new DatagramPacket(buffer, 0, 512);
+
                 receiving_socket.receive(packet);
-                player.playback(packet.getData());
                 
+                player.playBlock(packet.getData());
+
                 //The user can type EXIT to quit
                 if (str.substring(0,4).equals("EXIT")){
                      running=false;

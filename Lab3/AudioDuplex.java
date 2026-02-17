@@ -6,12 +6,12 @@
  *
  * @author  abj
  */
-public class TextDuplex {
+public class AudioDuplex {
     
     public static void main (String[] args){
         
-        TextReceiverThread receiver = new TextReceiverThread();
-        TextSenderThread sender = new TextSenderThread();
+        AudioReceiver receiver = new AudioRceiver();
+        AudioSender sender = new AudioSender();
         
         receiver.start();
         sender.start();
