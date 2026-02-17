@@ -1,16 +1,18 @@
 /*
- * TextDuplex.java
+ * AudioDuplex.java
  */
 
 /**
  *
  * @author  abj
  */
+
+
 public class AudioDuplex {
     
     public static void main (String[] args){
         
-        AudioReceiver receiver = new AudioRceiver();
+        AudioReceiver receiver = new AudioReceiver();
         AudioSender sender = new AudioSender();
         
         receiver.start();

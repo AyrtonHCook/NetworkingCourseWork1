@@ -1,3 +1,6 @@
+
+import CMPC3M06.AudioPlayer;
+import javax.sound.sampled.*;
 /*
  * TextReceiver.java
  */
@@ -62,10 +65,6 @@ public class AudioReceiver implements Runnable{
                 
                 player.playBlock(packet.getData());
 
-                //The user can type EXIT to quit
-                if (str.substring(0,4).equals("EXIT")){
-                     running=false;
-                }
             } catch (IOException e){
                 System.out.println("ERROR: TextReceiver: Some random IO error occured!");
                 e.printStackTrace();

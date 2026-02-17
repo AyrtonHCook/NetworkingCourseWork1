@@ -4,7 +4,7 @@ import javax.sound.sampled.LineUnavailableException;
 import java.io.IOException;
 import java.net.*;
 
-public class AudioSenderThread implements Runnable{
+public class AudioSender implements Runnable{
 
     public DatagramSocket sending_socket;
 
@@ -22,7 +22,7 @@ public class AudioSenderThread implements Runnable{
         byte[] block = null;
         try {
             // get client IP address
-            clientIP = InetAddress.getByName("0000.0000.0000.0000");
+            clientIP = InetAddress.getByName("localhost");
         } catch (UnknownHostException e) {
             System.out.println("Errorr: Counld not find client IP.");
             System.exit(0);
@@ -66,4 +66,3 @@ public class AudioSenderThread implements Runnable{
     }
 
 }
-..
