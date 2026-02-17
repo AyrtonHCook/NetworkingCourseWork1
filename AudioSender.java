@@ -16,7 +16,7 @@ public class AudioSender {
         //IP ADDRESS to send to
         InetAddress clientIP = null;
         try {
-            clientIP = InetAddress.getByName("139.222.149.167");
+            clientIP = InetAddress.getByName("000.000.000.000");
         } catch (UnknownHostException e) {
             System.out.println("ERROR: TextSender: Could not find client IP");
             e.printStackTrace();
@@ -78,4 +78,5 @@ public class AudioSender {
         sending_socket.close();
         //***************************************************
     }
+
 }
