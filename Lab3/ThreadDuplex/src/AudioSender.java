@@ -21,6 +21,8 @@ public class AudioSender implements Runnable{
         InetAddress clientIP = null;
         AudioRecorder recorder = null;
         byte[] block = null;
+        short authenticationKey = 10;
+
         try {
             // get client IP address
             clientIP = InetAddress.getByName("");
@@ -53,17 +55,24 @@ public class AudioSender implements Runnable{
                 block = recorder.getBlock();
                 ByteBuffer unwrapEncrypt = ByteBuffer.allocate(block.length);
                 ByteBuffer plainText = ByteBuffer.wrap(block);
-                    for( int j = 0; j < block.length/4; j++) {
+                for( int j = 0; j < block.length/4; j++) {
                     int fourByte = plainText.getInt();
                     fourByte = fourByte ^ key; // XOR operation with key
                     unwrapEncrypt.putInt(fourByte);
-                    }
+                }
                 byte[] encryptedBlock = unwrapEncrypt.array();
-                DatagramPacket packet = new DatagramPacket(encryptedBlock, encryptedBlock.length, clientIP, PORT);
+
+                // get header
+                ByteBuffer VoIPpacket = ByteBuffer.allocate(514);
+                VoIPpacket.putShort(authenticationKey); // place the authentication key in the header
+                VoIPpacket.put(encryptedBlock); // place the payload of the packet
+                byte[] sendingPacket = VoIPpacket.array();
+
+                DatagramPacket packet = new DatagramPacket(sendingPacket, sendingPacket.length, clientIP, PORT);
                 sending_socket.send(packet);
             } catch (IOException e) {
                 System.out.println("Error: IO exception occurred.");
-                System.exit(0); 
+                System.exit(0);
             }
         }
     }
