@@ -77,10 +77,16 @@ public class Channel2Receiver implements Runnable{
         System.out.printf("Packet rate: %.3f%n", packet_rate);
         Iterator<Integer> it1 = burstArrayList.iterator();
         int sum = 0;
+        int max_burst_len = 0;
         while(it1.hasNext()){
-            sum += it1.next();
+            int now = it1.next();
+            sum += now;
+            if (now > max_burst_len){
+                max_burst_len = now;
+            }
         }
         float average_burst_length = sum/burstArrayList.size();
+        System.out.println("Maximum burst length: " + max_burst_len);
         System.out.println("Average burst length: " + average_burst_length);
     }
 }

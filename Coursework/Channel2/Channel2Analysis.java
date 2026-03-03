@@ -1,6 +1,6 @@
 package NetworkingCourseWork1.Coursework.Channel2;
 
-public class Channel2ThreadDuplex{
+public class Channel2Analysis{
     
 
     public static void main(String[] args) {
