@@ -41,8 +41,8 @@ Report submission :m2, 2026-03-16, 1d
 ## Channel 2 (DatagramSocket2)
 * Received: 7510 / 10000
 * Loss: 2490 packets (24.9%)
-* Maximum burst length: 15
-* Average burst length: 5
+* Maximum burst length: 14
+* Average burst length: 4
 * Avg delay: 0.26 ms
 * Max delay: 1.06 ms
 ## Channel 3 
