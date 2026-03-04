@@ -1,3 +1,4 @@
+# Gantt Chart
 ```mermaid
 gantt
 title VoIP Coursework Plan
@@ -35,3 +36,10 @@ section Milestones
 Demo :m1, 2026-03-11, 1d
 Report submission :m2, 2026-03-16, 1d
 ```
+---
+# Channel Analysis
+## Channel 2 (DatagramSocket2)
+* Packet loss count: 54 out of 1000
+* Packet rate: 0.054
+* Maximum burst length: 2
+* Average burst length: 1
