@@ -43,6 +43,8 @@ Report submission :m2, 2026-03-16, 1d
 * Loss: 2490 packets (24.9%)
 * Maximum burst length: 15
 * Average burst length: 5
+* Avg delay: 0.26 ms
+* Max delay: 1.06 ms
 ## Channel 3 
 * Received: 1540 / 2000
 * Loss: 460 packets (23.0%)
