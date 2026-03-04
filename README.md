@@ -39,10 +39,10 @@ Report submission :m2, 2026-03-16, 1d
 ---
 # Channel Analysis
 ## Channel 2 (DatagramSocket2)
-* Packet loss count: 54 out of 1000
-* Packet rate: 0.054
-* Maximum burst length: 2
-* Average burst length: 1
+* Received: 7510 / 10000
+* Loss: 2490 packets (24.9%)
+* Maximum burst length: 15
+* Average burst length: 5
 ## Channel 3 
 * Received: 1540 / 2000
 * Loss: 460 packets (23.0%)
