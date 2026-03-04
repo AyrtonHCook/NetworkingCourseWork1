@@ -1,9 +1,7 @@
 package NetworkingCourseWork1.Coursework.Channel2;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.util.*;
 
 import uk.ac.uea.cmp.voip.DatagramSocket2;
@@ -16,9 +14,11 @@ public class Channel2Receiver implements Runnable{
     }
     
     public void run(){
+        // initialise variables
         final int PORT = 55555;
         DatagramSocket2 receiving_Socket = null;
 
+        // Creates DatagramSocket
         try{
             receiving_Socket = new DatagramSocket2(PORT);
             receiving_Socket.setSoTimeout(3000);
@@ -26,18 +26,23 @@ public class Channel2Receiver implements Runnable{
             System.out.println("Receiver Error: unable to create socket");
             System.exit(0);
         }
+
+        // Main loop
         boolean running = true;
+        // ArrayList to store values of incoming packets
         ArrayList<Integer> packetArrayList = new ArrayList<Integer>();
         while(running){
             try{
+                // Create DatagramPacket to store incoming packets in a buffer
                 byte[] buffer = new byte[80];
                 DatagramPacket packet = new DatagramPacket(buffer, 0, 80);
                 receiving_Socket.receive(packet);
 
-                //Get a string from the byte buffer
+                // Get a string from the byte buffer
                 String str = new String(buffer);
-                //Display it
-                //System.out.println(str);
+                // Display it
+                // System.out.println(str);
+                // Add value into the ArrayList
                 packetArrayList.add(Integer.valueOf(str.trim()));
                 
             } catch(SocketTimeoutException e){
@@ -49,22 +54,27 @@ public class Channel2Receiver implements Runnable{
         }
         System.out.println("Receive over");
         receiving_Socket.close();
-                Iterator<Integer> it = packetArrayList.iterator();
+        // Calculations for analysis
+        Iterator<Integer> it = packetArrayList.iterator();
         Integer temp = null;
         float loss_count = 0;
         Integer burst_length = 0;
         ArrayList<Integer> burstArrayList = new ArrayList<Integer>();
+        // Iterate through the arrayList to check if there are packet lost
         while(it.hasNext()){
             int now = it.next();
             System.out.println(now);
+            // Skip the first element
             if (temp == null){
                 temp = it.next();
             }
+            // Add count of loss paacket and burst length
             if (now - temp != 1){
                 loss_count++;
                 burst_length++;
             } 
             else{
+                // Add burst length into arrayList
                 if(burst_length > 0){
                     burstArrayList.add(burst_length);
                     burst_length = 0;
@@ -72,6 +82,7 @@ public class Channel2Receiver implements Runnable{
             }
             temp = now;
         }
+        // Calculations of packet rate, maximum burst length and average burst length
         System.out.println("Amount of packets lost: " + loss_count);
         float packet_rate = loss_count/1000;
         System.out.printf("Packet rate: %.3f%n", packet_rate);

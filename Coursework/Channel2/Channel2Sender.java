@@ -12,11 +12,13 @@ public class Channel2Sender implements Runnable{
     }
     
     public void run(){
+        // Initialise variables
         final int PORT = 55555;
         InetAddress clientIP = null;
         byte[] block = null;
         DatagramSocket2 sending_Socket = null;
 
+        // Get IP address
         try{
             clientIP = InetAddress.getByName("localhost");
         } catch(UnknownHostException e){
@@ -25,6 +27,7 @@ public class Channel2Sender implements Runnable{
 
         }
 
+        // Create DatagramSocket
         try{
             sending_Socket = new DatagramSocket2();
         } catch(SocketException e){
@@ -32,6 +35,7 @@ public class Channel2Sender implements Runnable{
             System.exit(0);
         }
 
+        // Main loop sending 1000 packet with value 0 - 999
         System.out.println("Sending...");
         for(int i = 0; i < 1000; i++){
             try{
