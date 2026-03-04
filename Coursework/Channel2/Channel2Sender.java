@@ -1,9 +1,8 @@
 package NetworkingCourseWork1.Coursework.Channel2;
-import java.net.SocketException;
-
 import uk.ac.uea.cmp.voip.DatagramSocket2;
 import java.io.IOException;
 import java.net.*;
+import java.nio.ByteBuffer;
 
 public class Channel2Sender implements Runnable{
     public void start(){
@@ -15,7 +14,6 @@ public class Channel2Sender implements Runnable{
         // Initialise variables
         final int PORT = 55555;
         InetAddress clientIP = null;
-        byte[] block = null;
         DatagramSocket2 sending_Socket = null;
 
         // Get IP address
@@ -37,10 +35,14 @@ public class Channel2Sender implements Runnable{
 
         // Main loop sending 1000 packet with value 0 - 999
         System.out.println("Sending...");
-        for(int i = 0; i < 1000; i++){
+        for(int i = 0; i < 10000; i++){
             try{
-                String payload = Integer.toString(i);
-                block = payload.getBytes();
+                // add sequence number
+                ByteBuffer buffer = ByteBuffer.allocate(12);
+                buffer.putInt(i);
+                Long timestamp = System.nanoTime();
+                buffer.putLong(timestamp);
+                byte[] block = buffer.array();
 
                 DatagramPacket sending_Packet = new DatagramPacket(block, block.length, clientIP, PORT);
 

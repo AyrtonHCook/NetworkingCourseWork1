@@ -2,6 +2,7 @@ package NetworkingCourseWork1.Coursework.Channel2;
 
 import java.io.IOException;
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 import uk.ac.uea.cmp.voip.DatagramSocket2;
@@ -31,20 +32,22 @@ public class Channel2Receiver implements Runnable{
         boolean running = true;
         // ArrayList to store values of incoming packets
         ArrayList<Integer> packetArrayList = new ArrayList<Integer>();
+        ArrayList<Float> delayArrayList = new ArrayList<Float>();
         while(running){
             try{
                 // Create DatagramPacket to store incoming packets in a buffer
-                byte[] buffer = new byte[80];
-                DatagramPacket packet = new DatagramPacket(buffer, 0, 80);
+                byte[] buffer = new byte[12];
+                DatagramPacket packet = new DatagramPacket(buffer, 0, 10);
                 receiving_Socket.receive(packet);
 
-                // Get a string from the byte buffer
-                String str = new String(buffer);
-                // Display it
-                // System.out.println(str);
-                // Add value into the ArrayList
-                packetArrayList.add(Integer.valueOf(str.trim()));
+                // Put data into the ByteBuffer and seperate squence number and timestamp
+                ByteBuffer wrapped = ByteBuffer.wrap(packet.getData());
+                packetArrayList.add(wrapped.getInt());
                 
+                // Get delay from timestamp
+                float delay = (System.nanoTime() - wrapped.getLong()) / 1_000_000f;
+                delayArrayList.add(delay);
+
             } catch(SocketTimeoutException e){
                 System.out.println("Receiver time out, message ended");
                 break;
@@ -54,50 +57,70 @@ public class Channel2Receiver implements Runnable{
         }
         System.out.println("Receive over");
         receiving_Socket.close();
+
         // Calculations for analysis
         Iterator<Integer> it = packetArrayList.iterator();
         Integer temp = null;
         float loss_count = 0;
         Integer burst_length = 0;
         ArrayList<Integer> burstArrayList = new ArrayList<Integer>();
-        // Iterate through the arrayList to check if there are packet lost
-        while(it.hasNext()){
-            int now = it.next();
-            System.out.println(now);
-            // Skip the first element
-            if (temp == null){
-                temp = it.next();
-            }
-            // Add count of loss paacket and burst length
-            if (now - temp != 1){
-                loss_count++;
-                burst_length++;
-            } 
-            else{
-                // Add burst length into arrayList
-                if(burst_length > 0){
-                    burstArrayList.add(burst_length);
-                    burst_length = 0;
-                }
-            }
-            temp = now;
+
+        // Check beginning of the array see if there are loss from the beginning
+        if(packetArrayList.get(0) > 0){
+            burstArrayList.add(packetArrayList.get(1));
         }
-        // Calculations of packet rate, maximum burst length and average burst length
-        System.out.println("Amount of packets lost: " + loss_count);
-        float packet_rate = loss_count/1000;
-        System.out.printf("Packet rate: %.3f%n", packet_rate);
+
+        // Check end of the array see if there are loss at the end
+        if(packetArrayList.get(packetArrayList.size() - 1) < 9999){
+            burstArrayList.add(9999 - packetArrayList.get(packetArrayList.size() - 1));
+        }
+
+        // Iterate through the arrayList to check if there are packet lost
+        int now = it.next();
+        while(it.hasNext()){ 
+            int next = it.next();
+            if(next - now != 1){
+                burst_length = next - now - 1;
+                burstArrayList.add(burst_length);
+            }
+            now = next;
+        }
+
+        // get average burst length
         Iterator<Integer> it1 = burstArrayList.iterator();
         int sum = 0;
         int max_burst_len = 0;
         while(it1.hasNext()){
-            int now = it1.next();
+            now = it1.next();
             sum += now;
             if (now > max_burst_len){
                 max_burst_len = now;
             }
         }
-        float average_burst_length = sum/burstArrayList.size();
+        float average_burst_length = sum / burstArrayList.size();
+
+        // get average delay
+        Iterator<Float> it2 = delayArrayList.iterator();
+        float sum1 = 0;
+        float max = 0;
+        float now1;
+        while(it2.hasNext()){
+            now1 = it2.next();
+            sum1 += now1;
+            if (now1 > max){
+                max = now1;
+            }
+        }
+        float average_delay = sum1 / delayArrayList.size();
+
+        // Calculations of packet rate, maximum burst length and average burst length
+        System.out.println("Amount of packets received: " + packetArrayList.size());
+        System.out.println("Amount of packets lost: " + (10000 - packetArrayList.size()));
+        float packet_rate = (10000 - packetArrayList.size())/10000f * 100;
+        System.out.printf("Packet loss rate: %.2f%%%n", packet_rate);
         System.out.println("Maximum burst length: " + max_burst_len);
         System.out.println("Average burst length: " + average_burst_length);
+        System.out.printf("Maximum delay: %.2fms %n", max);
+        System.out.printf("Average delay: %.2fms %n", average_delay);
     }
 }
