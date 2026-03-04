@@ -43,3 +43,12 @@ Report submission :m2, 2026-03-16, 1d
 * Packet rate: 0.054
 * Maximum burst length: 2
 * Average burst length: 1
+## Channel 3 
+* Received: 1540 / 2000
+* Loss: 460 packets (23.0%)
+* Burst loss: 263 bursts
+* Max burst: 154 packets (about 4.9 s)
+* Avg burst length: about 1.75 packets (about 56 ms)
+* Avg delay: 45.3 ms
+* Max delay: 325.3 ms
+
