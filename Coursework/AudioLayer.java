@@ -44,7 +44,7 @@ public class AudioLayer {
 
     // Closes the audio recorder and player.
     public void close() {
-        try { recorder.close(); } catch (Exception e) { /* ignore */ }
-        try { player.close();   } catch (Exception e) { /* ignore */ }
+        try { recorder.close(); } catch (Exception e) {}
+        try { player.close();   } catch (Exception e) {}
     }
 }
