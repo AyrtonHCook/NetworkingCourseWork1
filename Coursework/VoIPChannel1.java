@@ -1,3 +1,4 @@
+package NetworkingCourseWork1.Coursework;
 public class VoIPChannel1 {
 
     public static void main(String[] args) throws Exception {

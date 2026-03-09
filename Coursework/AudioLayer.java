@@ -1,3 +1,4 @@
+package NetworkingCourseWork1.Coursework;
 import CMPC3M06.AudioPlayer;
 import CMPC3M06.AudioRecorder;
 
@@ -31,6 +32,7 @@ public class AudioLayer {
     public void playBlock(byte[] block) throws Exception {
         if (block == null || block.length != BLOCK_SIZE_BYTES) {
             // if something goes wrong play silence
+            System.out.println("packet error");
             player.playBlock(new byte[BLOCK_SIZE_BYTES]);
         } else {
             player.playBlock(block);

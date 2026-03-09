@@ -3,6 +3,7 @@ import uk.ac.uea.cmp.voip.DatagramSocket2;
 import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
+import CMPC3M06.AudioRecorder;
 
 public class Channel2Sender implements Runnable{
     public void start(){
