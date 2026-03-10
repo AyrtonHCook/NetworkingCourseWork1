@@ -1,4 +1,3 @@
-package NetworkingCourseWork1.Coursework;
 import java.math.BigInteger;
 import java.net.*;
 import java.nio.ByteBuffer;
@@ -8,8 +7,8 @@ public class VoIPReceiverThread implements Runnable {
 
     // Packet structure: must match VoIPSenderThread
     private static final int HEADER_SIZE  = VoIPSenderThread.HEADER_SIZE;
-    private static final int PAYLOAD_SIZE = VoIPSenderThread.PAYLOAD_SIZE;
     private static final int PACKET_SIZE  = VoIPSenderThread.PACKET_SIZE;
+    private static final int CIPHERTEXT_SIZE = 512;
 
     // Network config: must match sender
     private static final int PORT = 55555;
@@ -20,7 +19,7 @@ public class VoIPReceiverThread implements Runnable {
 
     private AudioLayer     audioLayer;
     private DatagramSocket socket;
-    private boolean        running;
+    private volatile boolean        running;
 
     // Creates a VoIPReceiverThread
     public VoIPReceiverThread(AudioLayer audioLayer) throws Exception {
@@ -46,6 +45,28 @@ public class VoIPReceiverThread implements Runnable {
         socket.close();
     }
 
+    private static final byte[] SHARED_SECRET = "secret".getBytes();
+
+    public static int computeCheck(byte[] header, byte[] payload) {
+        int hash = 17;
+
+        for (byte b : header) {
+            hash = 31 * hash + (b & 0xFF);
+        }
+
+        for (byte b : payload) {
+            hash = 31 * hash + (b & 0xFF);
+        }
+
+        for (byte b : SHARED_SECRET) {
+            hash = 31 * hash + (b & 0xFF);
+        }
+
+        return hash;
+    }
+
+
+
      // Main receiver loop.
      //  1. Waits up to 32ms for a UDP packet from the Transport Layer
      //  2. If a packet arrives, gets the sequence number and audio payload
@@ -69,24 +90,39 @@ public class VoIPReceiverThread implements Runnable {
                 DatagramPacket udpPacket = new DatagramPacket(buffer, PACKET_SIZE);
                 socket.receive(udpPacket);  // blocks until packet arrives or timeout
 
-                // VoIP Layer: parse the packet
                 ByteBuffer packetBuffer = ByteBuffer.wrap(buffer);
 
-                // Extract the 4-byte sequence number from the header
-                int receivedSeqNo = packetBuffer.getInt();
+                byte[] header = new byte[HEADER_SIZE];
+                packetBuffer.get(header);
+
+                ByteBuffer headerReader = ByteBuffer.wrap(header);
+                int receivedSeqNo = headerReader.getInt();
+
+                byte[] encryptedBlock = new byte[CIPHERTEXT_SIZE];
+                packetBuffer.get(encryptedBlock);
+
+                int receivedCheck = packetBuffer.getInt();
+
+                int expectedCheck = computeCheck(header, encryptedBlock);
+
+                if (receivedCheck != expectedCheck) {
+                    System.out.println("[VoIPReceiver] Packet failed check. Dropping.");
+                    continue;
+                }
 
                 // Detect missing packets (Channel 1: for logging only; no mitigation needed)
-                if (receivedSeqNo != expectedSequenceNumber) {
+                if (receivedSeqNo > expectedSequenceNumber) {
                     System.out.println("[VoIPReceiver] Warning: expected seq "
                             + expectedSequenceNumber + " but got " + receivedSeqNo
-                            + " — " + (receivedSeqNo - expectedSequenceNumber) + " packet(s) lost.");
+                            + " , " + (receivedSeqNo - expectedSequenceNumber) + " packet(s) missing.");
+                } else if (receivedSeqNo < expectedSequenceNumber) {
+                    System.out.println("[VoIPReceiver] Warning: received old or out-of-order packet. Expected "
+                            + expectedSequenceNumber + " but got " + receivedSeqNo + ".");
                 }
                 expectedSequenceNumber = receivedSeqNo + 1;
 
-                // Extract the 512-byte audio payload
-                byte[] audioBlock = new byte[PAYLOAD_SIZE];
-                packetBuffer.get(audioBlock);
-                byte[] decrypted = sec.decryption(audioBlock, keys);
+                byte[] decrypted = sec.decryption(encryptedBlock, keys);
+                System.out.println("decrypted length = " + decrypted.length);
 
                 // Audio Layer interface: play the received audio
                 audioLayer.playBlock(decrypted);
