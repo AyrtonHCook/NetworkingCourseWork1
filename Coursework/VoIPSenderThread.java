@@ -1,4 +1,5 @@
 package NetworkingCourseWork1.Coursework;
+
 import java.math.BigInteger;
 import java.net.*;
 import java.nio.ByteBuffer;
@@ -8,8 +9,9 @@ public class VoIPSenderThread implements Runnable {
 
     // Packet structure constants
     public static final int HEADER_SIZE  = 4;   // 4 bytes for sequence number (int)
-    public static final int PAYLOAD_SIZE = AudioLayer.BLOCK_SIZE_BYTES; // 512 bytes
-    public static final int PACKET_SIZE  = HEADER_SIZE + PAYLOAD_SIZE;  // 516 bytes total
+    public static final int CIPHERTEXT_SIZE = 512;
+    public static final int CHECK_SIZE = 4;
+    public static final int PACKET_SIZE  = HEADER_SIZE + CIPHERTEXT_SIZE + CHECK_SIZE; 
 
     // Network config
     private static final int    PORT            = 55555;
@@ -18,7 +20,7 @@ public class VoIPSenderThread implements Runnable {
     private AudioLayer     audioLayer;
     private DatagramSocket socket;
     private InetAddress    receiverAddress;
-    private boolean        running;
+    private volatile boolean        running;
 
     // Creates a VoIPSenderThread
     public VoIPSenderThread(AudioLayer audioLayer) throws Exception {
@@ -42,6 +44,28 @@ public class VoIPSenderThread implements Runnable {
         running = false;
         socket.close();
     }
+
+    private static final byte[] SHARED_SECRET = "secret".getBytes();
+
+    public static int computeCheck(byte[] header, byte[] payload) {
+        int hash = 17;
+
+        for (byte b : header) {
+            hash = 31 * hash + (b & 0xFF);
+        }
+
+        for (byte b : payload) {
+            hash = 31 * hash + (b & 0xFF);
+        }
+
+        for (byte b : SHARED_SECRET) {
+            hash = 31 * hash + (b & 0xFF);
+        }
+
+        return hash;
+    }
+
+
 
 
      // Main sender loop
@@ -67,15 +91,33 @@ public class VoIPSenderThread implements Runnable {
                 byte[] audioBlock = audioLayer.getBlock();  // blocks until 32ms block ready
                 byte[] encrpyted = sec.encryption(audioBlock, new BigInteger[]{keys[0], keys[1]}); // encryption
 
-                // VoIP Layer: builds packet with header
+                if (encrpyted.length != CIPHERTEXT_SIZE) {
+                throw new IllegalStateException(
+                    "Encrypted block length was " + encrpyted.length +
+                    ", expected " + CIPHERTEXT_SIZE
+                );
+                }
+
+                ByteBuffer headerBuffer = ByteBuffer.allocate(HEADER_SIZE);
+                headerBuffer.putInt(sequenceNumber);
+                byte[] header = headerBuffer.array();
+
+                int check = computeCheck(header, encrpyted);
+
+
                 ByteBuffer packetBuffer = ByteBuffer.allocate(PACKET_SIZE);
-                packetBuffer.putInt(sequenceNumber);   // 4-byte sequence number
-                packetBuffer.put(encrpyted);          // 512-byte audio payload
+                packetBuffer.put(header);
+                packetBuffer.put(encrpyted);
+                packetBuffer.putInt(check);
                 byte[] packetData = packetBuffer.array();
+
+
 
                 // Transport Layer interface
                 DatagramPacket packet = new DatagramPacket(
                         packetData, packetData.length, receiverAddress, PORT);
+                // test for authentication should drop all receiving packets if uncommented
+                //packetData[10] ^= 1;
                 socket.send(packet);
 
                 sequenceNumber++;  // increment for next packet
