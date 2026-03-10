@@ -17,7 +17,7 @@ public class SecurityLayer{
     //         return num1;
     //     }
     //     return GCD(num2, num1.remainder(num2));
-    // }
+    // }    
 
     // extended euclidean algorithm
     public static BigInteger[] extendedGCD(BigInteger num1, BigInteger num2){
@@ -35,6 +35,31 @@ public class SecurityLayer{
         BigInteger y = x1.subtract((num1.divide(num2)).multiply(y1));
 
         return result = new BigInteger[]{gcd, x, y};
+    }
+    private byte[] toFixedLength(BigInteger value, int length) {
+    byte[] raw = value.toByteArray();
+
+    if (raw.length == length) {
+        return raw;
+    }
+
+    // remove leading sign byte 
+    if (raw.length == length + 1 && raw[0] == 0) {
+        byte[] trimmed = new byte[length];
+        System.arraycopy(raw, 1, trimmed, 0, length);
+        return trimmed;
+    }
+
+    // pad with zeros if too short
+    if (raw.length < length) {
+        byte[] padded = new byte[length];
+        System.arraycopy(raw, 0, padded, length - raw.length, raw.length);
+        return padded;
+    }
+
+    throw new IllegalArgumentException(
+        "Value length " + raw.length + " does not fit fixed length " + length
+    );
     }
 
     public BigInteger[] genKey(){
@@ -65,24 +90,29 @@ public class SecurityLayer{
         return key;
     }
 
-    public byte[] encryption(byte[] packet, BigInteger[] keys){
+    public byte[] encryption(byte[] packet, BigInteger[] keys) {
         BigInteger plaintext = new BigInteger(1, packet);
         BigInteger n = keys[0];
         BigInteger e = keys[1];
-        BigInteger cyphertext = plaintext.modPow(e, n);
-        byte[] cyphertextbyte = cyphertext.toByteArray();
 
-        return cyphertextbyte;
-    }   
+        if (plaintext.compareTo(n) >= 0) {
+            throw new IllegalArgumentException("Plaintext too large for modulus");
+        }
 
-    public byte[] decryption(byte[] packet, BigInteger[] keys){
-        BigInteger cyphertext = new BigInteger(1, packet);
+        BigInteger ciphertext = plaintext.modPow(e, n);
+
+        int modulusBytes = (n.bitLength() + 7) / 8;
+        return toFixedLength(ciphertext, modulusBytes);
+    }
+
+    public byte[] decryption(byte[] packet, BigInteger[] keys) {
+        BigInteger ciphertext = new BigInteger(1, packet);
         BigInteger n = keys[0];
         BigInteger d = keys[1];
-        BigInteger plaintext = cyphertext.modPow(d, n);
-        byte[] plaintextbyte = plaintext.toByteArray();
-        
-        return plaintextbyte;
+
+        BigInteger plaintext = ciphertext.modPow(d, n);
+
+        return toFixedLength(plaintext, AudioLayer.BLOCK_SIZE_BYTES);
     }
 
     public static void main(String[] args) {
@@ -117,4 +147,4 @@ public class SecurityLayer{
             System.out.println("same!!!");
         }
     }
-} 
+}
