@@ -14,7 +14,7 @@ public class ReceiverAudioLayer {
             player.playBlock(new byte[BLOCK_SIZE_BYTES]);
         }
 
-    public void playBlock(byte[] block) throws Exception {
+    public void playBlock(byte[] block) throws Exception {// if block does not arrive play silence so no crash 
         if (block == null || block.length != BLOCK_SIZE_BYTES) {
             player.playBlock(new byte[BLOCK_SIZE_BYTES]);
         } else {

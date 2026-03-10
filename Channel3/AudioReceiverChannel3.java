@@ -19,13 +19,15 @@ public class AudioReceiverChannel3 implements Runnable {
     private DatagramSocket socket;
     private volatile boolean running;
 
+
+    // Stores packets by sequence number so packets can be played in the right order
     private final Map<Integer, byte[]> buffer = new ConcurrentHashMap<>();
+    
+    private volatile boolean started; //have we filled the buffer enough to begin playing sound yet
+    private volatile int expectedSeq; //the next packet number we want to play
 
-    private volatile boolean started;
-    private volatile int expectedSeq;
-
-    private byte[] lastGood = new byte[BLOCK_SIZE];
-    private int missingStreak = 0;
+    private byte[] lastGood = new byte[BLOCK_SIZE]; // lastGood stores the last valid audio block so we can replay it
+    private int missingStreak = 0; 
 
     public AudioReceiverChannel3(ReceiverAudioLayer audioLayer, int port) throws Exception {
         this.audioLayer = audioLayer;
@@ -56,7 +58,9 @@ public class AudioReceiverChannel3 implements Runnable {
             System.err.println("[Ch3Receiver] Receiver failed: " + e.getMessage());
             return;
         }
-
+        
+        //seperate thread for playout 
+        //one keeps receiving packets other plays them 
         Thread playout = new Thread(this::playoutLoop, "Ch3PlayoutLoop");
         playout.setDaemon(true);
         playout.start();
@@ -108,9 +112,9 @@ public class AudioReceiverChannel3 implements Runnable {
         while (running) {
             long t0 = System.nanoTime();
 
-            if (started) {
+            if (started) { //get expected packet and remove it from the buffer
                 byte[] frame = buffer.remove(expectedSeq);
-
+ 
                 if (frame != null) {
                     try {
                         audioLayer.playBlock(frame);
@@ -119,7 +123,7 @@ public class AudioReceiverChannel3 implements Runnable {
                     } catch (Exception e) {
                         System.err.println("[Ch3Receiver] Audio playBlock failed: " + e.getMessage());
                     }
-                } else {
+                } else { // packet missing replay good packets a few times then go silent 
                     missingStreak++;
                     try {
                         if (missingStreak <= 3) {
@@ -131,14 +135,14 @@ public class AudioReceiverChannel3 implements Runnable {
                         System.err.println("[Ch3Receiver] Concealment failed: " + e.getMessage());
                     }
                 }
-
+                // go next seq number whether packet arrives or not 
                 expectedSeq++;
             }
 
             long elapsed = System.nanoTime() - t0;
             long target = FRAME_MS * 1_000_000L;
             long sleepNs = target - elapsed;
-
+            // sleep for the reset of 32 ms 
             if (sleepNs > 0) {
                 try {
                     Thread.sleep(sleepNs / 1_000_000L, (int) (sleepNs % 1_000_000L));

@@ -40,7 +40,7 @@ public class AudioSenderChannel3 implements Runnable {
             try {
                 byte[] block = audioLayer.getBlock();
 
-                ByteBuffer bb = ByteBuffer.allocate(4 + block.length);
+                ByteBuffer bb = ByteBuffer.allocate(4 + block.length); // 4 bytes seq number rest audio data
                 bb.putInt(seq);
                 bb.put(block);
 
