@@ -23,7 +23,7 @@ public class VoIPChannel2 {
         receiver.start();
         
         // this if statement is just for testing
-        boolean y = false;
+        boolean y = true;
         if(y == true){
             try{
                 System.in.read();
@@ -33,7 +33,7 @@ public class VoIPChannel2 {
             }
         } else{
             try{
-                Thread.sleep(4000);
+                Thread.sleep(3000);
             } catch(Exception e){
                 System.err.println("Duplex error");
                 System.exit(0);

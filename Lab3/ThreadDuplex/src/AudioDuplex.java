@@ -12,7 +12,7 @@ public class AudioDuplex {
     
     public static void main (String[] args){
         
-        AudioReceiver receiver = new AudioReceiver();
+        ReceiverAudioLayer receiver = new ReceiverAudioLayer();
         AudioSender sender = new AudioSender();
         
         receiver.start();

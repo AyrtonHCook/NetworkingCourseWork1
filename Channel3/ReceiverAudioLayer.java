@@ -1,12 +1,13 @@
-package NetworkingCourseWork1.Coursework;
+
 import CMPC3M06.AudioPlayer;
 
-public class AudioReceiver {
+public class ReceiverAudioLayer {
     public static final int BLOCK_SIZE_BYTES = 512;
+    public static final int BLOCK_DURATION_MS = 32;
     public AudioPlayer player;
 
-    public AudioReceiver() throws Exception{
-        AudioPlayer player   = new AudioPlayer();
+    public ReceiverAudioLayer() throws Exception{
+        player   = new AudioPlayer();
     }
     
     public void playSilence() throws Exception {
@@ -15,8 +16,7 @@ public class AudioReceiver {
 
     public void playBlock(byte[] block) throws Exception {
         if (block == null || block.length != BLOCK_SIZE_BYTES) {
-            // if something goes wrong play silence
-            this.playSilence();
+            player.playBlock(new byte[BLOCK_SIZE_BYTES]);
         } else {
             player.playBlock(block);
         }

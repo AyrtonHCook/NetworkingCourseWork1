@@ -23,7 +23,6 @@ public class Channel2Sender implements Runnable{
         } catch(UnknownHostException e){
             System.out.println("Sender Error: unable to get client IP address");
             System.exit(1);
-
         }
 
         // Create DatagramSocket
