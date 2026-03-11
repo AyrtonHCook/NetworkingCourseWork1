@@ -7,94 +7,95 @@ import uk.ac.uea.cmp.voip.DatagramSocket3;
 
 public class AudioReceiverChannel3 implements Runnable {
 
-    private final int port;
+    private final int listenPort;
 
-    private static final int FRAME_MS = ReceiverAudioLayer.BLOCK_DURATION_MS;
-    private static final int BLOCK_SIZE = ReceiverAudioLayer.BLOCK_SIZE_BYTES;
+    private static final int FRAME_TIME_MS = ReceiverAudioLayer.BLOCK_DURATION_MS;
+    private static final int AUDIO_BLOCK_SIZE = ReceiverAudioLayer.BLOCK_SIZE_BYTES;
 
-    private static final int STARTUP_BUFFER_FRAMES = 12; 
-    private static final int MAX_LATE_FRAMES = 50;       
+    private static final int START_BUFFER_SIZE = 12;
+    private static final int MAX_LATE_PACKETS = 50;
 
-    private final ReceiverAudioLayer audioLayer;
-    private DatagramSocket socket;
-    private volatile boolean running;
+    private final ReceiverAudioLayer receiverAudio;
+    private DatagramSocket receiverSocket;
+    private volatile boolean isRunning;
 
-    private final Map<Integer, byte[]> buffer = new ConcurrentHashMap<>();
+    private final Map<Integer, byte[]> packetBuffer = new ConcurrentHashMap<>();
 
-    private volatile boolean started;
-    private volatile int expectedSeq;
+    private volatile boolean hasStarted;
+    private volatile int nextPacketNumber;
 
-    private byte[] lastGood = new byte[BLOCK_SIZE];
-    private int missingStreak = 0;
+    private byte[] previousGoodBlock = new byte[AUDIO_BLOCK_SIZE];
+    private int missedPacketsInRow = 0;
 
-    public AudioReceiverChannel3(ReceiverAudioLayer audioLayer, int port) throws Exception {
-        this.audioLayer = audioLayer;
-        this.port = port;
+    public AudioReceiverChannel3(ReceiverAudioLayer receiverAudio, int listenPort) throws Exception {
+        this.receiverAudio = receiverAudio;
+        this.listenPort = listenPort;
     }
 
     public void start() {
-        Thread t = new Thread(this, "VoIPReceiverChannel3");
-        t.setDaemon(true);
-        t.start();
+        Thread receiverThread = new Thread(this, "VoIPReceiverChannel3");
+        receiverThread.setDaemon(true);
+        receiverThread.start();
     }
 
     public void stop() {
-        running = false;
-        if (socket != null && !socket.isClosed()) socket.close();
+        isRunning = false;
+        if (receiverSocket != null && !receiverSocket.isClosed()) {
+            receiverSocket.close();
+        }
     }
 
     @Override
     public void run() {
-        running = true;
-        started = false;
-        expectedSeq = 0;
-
+        isRunning = true;
+        hasStarted = false;
+        nextPacketNumber = 0;
 
         try {
-            socket = new DatagramSocket3(port);
+            receiverSocket = new DatagramSocket3(listenPort);
         } catch (SocketException e) {
             System.err.println("[Ch3Receiver] Receiver failed: " + e.getMessage());
             return;
         }
 
-        Thread playout = new Thread(this::playoutLoop, "Ch3PlayoutLoop");
-        playout.setDaemon(true);
-        playout.start();
+        Thread playThread = new Thread(this::playAudioLoop, "Ch3PlayoutLoop");
+        playThread.setDaemon(true);
+        playThread.start();
 
-        System.out.println("[Ch3Receiver] Channel 3 receiver started. Listening on port " + port);
+        System.out.println("[Ch3Receiver] Channel 3 receiver started. Listening on port " + listenPort);
 
-        byte[] recvBuf = new byte[2048];
-        DatagramPacket udpPacket = new DatagramPacket(recvBuf, recvBuf.length);
+        byte[] packetData = new byte[2048];
+        DatagramPacket receivedPacket = new DatagramPacket(packetData, packetData.length);
 
-        while (running) {
+        while (isRunning) {
             try {
-                socket.receive(udpPacket);
+                receiverSocket.receive(receivedPacket);
 
-                int n = udpPacket.getLength();
-                if (n < 4) continue;
+                int packetLength = receivedPacket.getLength();
+                if (packetLength < 4) continue;
 
-                byte[] audioData = new byte[n - 4];
-                System.arraycopy(recvBuf, 4, audioData, 0, n - 4);
+                byte[] audioBlock = new byte[packetLength - 4];
+                System.arraycopy(packetData, 4, audioBlock, 0, packetLength - 4);
 
-                int seq = ByteBuffer.wrap(recvBuf, 0, 4).getInt();
+                int packetNumber = ByteBuffer.wrap(packetData, 0, 4).getInt();
 
-                if (started && seq < expectedSeq - MAX_LATE_FRAMES) {
+                if (hasStarted && packetNumber < nextPacketNumber - MAX_LATE_PACKETS) {
                     continue;
                 }
 
-                buffer.put(seq, audioData);
+                packetBuffer.put(packetNumber, audioBlock);
 
-                if (!started && buffer.size() >= STARTUP_BUFFER_FRAMES) {
-                    started = true;
-                    expectedSeq = buffer.keySet().stream().min(Integer::compareTo).orElse(0);
+                if (!hasStarted && packetBuffer.size() >= START_BUFFER_SIZE) {
+                    hasStarted = true;
+                    nextPacketNumber = packetBuffer.keySet().stream().min(Integer::compareTo).orElse(0);
 
-                    System.out.println("[Ch3Receiver] Playout started at seq " + expectedSeq
-                            + " with startup buffer " + STARTUP_BUFFER_FRAMES
-                            + " frames (" + (STARTUP_BUFFER_FRAMES * FRAME_MS) + "ms)");
+                    System.out.println("[Ch3Receiver] Playout started at seq " + nextPacketNumber
+                            + " with startup buffer " + START_BUFFER_SIZE
+                            + " frames (" + (START_BUFFER_SIZE * FRAME_TIME_MS) + "ms)");
                 }
 
             } catch (Exception e) {
-                if (running) {
+                if (isRunning) {
                     System.err.println("[Ch3Receiver] Error: " + e.getMessage());
                 }
             }
@@ -104,44 +105,44 @@ public class AudioReceiverChannel3 implements Runnable {
         stop();
     }
 
-    private void playoutLoop() {
-        while (running) {
-            long t0 = System.nanoTime();
+    private void playAudioLoop() {
+        while (isRunning) {
+            long startTime = System.nanoTime();
 
-            if (started) {
-                byte[] frame = buffer.remove(expectedSeq);
+            if (hasStarted) {
+                byte[] currentBlock = packetBuffer.remove(nextPacketNumber);
 
-                if (frame != null) {
+                if (currentBlock != null) {
                     try {
-                        audioLayer.playBlock(frame);
-                        lastGood = frame;
-                        missingStreak = 0;
+                        receiverAudio.playBlock(currentBlock);
+                        previousGoodBlock = currentBlock;
+                        missedPacketsInRow = 0;
                     } catch (Exception e) {
                         System.err.println("[Ch3Receiver] Audio playBlock failed: " + e.getMessage());
                     }
                 } else {
-                    missingStreak++;
+                    missedPacketsInRow++;
                     try {
-                        if (missingStreak <= 3) {
-                            audioLayer.playBlock(lastGood);
+                        if (missedPacketsInRow <= 3) {
+                            receiverAudio.playBlock(previousGoodBlock);
                         } else {
-                            audioLayer.playSilence();
+                            receiverAudio.playSilence();
                         }
                     } catch (Exception e) {
                         System.err.println("[Ch3Receiver] Concealment failed: " + e.getMessage());
                     }
                 }
 
-                expectedSeq++;
+                nextPacketNumber++;
             }
 
-            long elapsed = System.nanoTime() - t0;
-            long target = FRAME_MS * 1_000_000L;
-            long sleepNs = target - elapsed;
+            long timeTaken = System.nanoTime() - startTime;
+            long targetTime = FRAME_TIME_MS * 1_000_000L;
+            long sleepTime = targetTime - timeTaken;
 
-            if (sleepNs > 0) {
+            if (sleepTime > 0) {
                 try {
-                    Thread.sleep(sleepNs / 1_000_000L, (int) (sleepNs % 1_000_000L));
+                    Thread.sleep(sleepTime / 1_000_000L, (int) (sleepTime % 1_000_000L));
                 } catch (InterruptedException ignored) {}
             }
         }

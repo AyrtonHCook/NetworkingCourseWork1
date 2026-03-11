@@ -19,9 +19,9 @@ public class VoIPReceiverThread implements Runnable {
     // Timeout: how long to wait for a packet before playing silence.
     private static final int SOCKET_TIMEOUT_MS = AudioLayer.BLOCK_DURATION_MS;
 
-    private AudioLayer     audioLayer;
+    private AudioLayer audioLayer;
     private DatagramSocket socket;
-    private volatile boolean        running;
+    private volatile boolean running;
 
     // Creates a VoIPReceiverThread
     public VoIPReceiverThread(AudioLayer audioLayer) throws Exception {
@@ -144,3 +144,4 @@ public class VoIPReceiverThread implements Runnable {
         System.out.println("[VoIPReceiver] Receiver stopped.");
     }
 }
+

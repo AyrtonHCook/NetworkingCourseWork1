@@ -1,18 +1,17 @@
-
 import java.net.InetAddress;
 
 public class AudioDuplexChannel3 {
     public static void main(String[] args) throws Exception {
-        int port = 55555;
-        InetAddress ip = InetAddress.getByName("localhost");
+        int listenPort = 55555;
+        InetAddress targetIp = InetAddress.getByName("localhost");
 
-        ReceiverAudioLayer rxAudio = new ReceiverAudioLayer();
-        SenderAudioLayer txAudio = new SenderAudioLayer();
+        ReceiverAudioLayer receiverAudio = new ReceiverAudioLayer();
+        SenderAudioLayer senderAudio = new SenderAudioLayer();
 
-        AudioReceiverChannel3 rx = new AudioReceiverChannel3(rxAudio, port);
-        AudioSenderChannel3 tx = new AudioSenderChannel3(txAudio, ip, port);
+        AudioReceiverChannel3 receiver = new AudioReceiverChannel3(receiverAudio, listenPort);
+        AudioSenderChannel3 sender = new AudioSenderChannel3(senderAudio, targetIp, listenPort);
 
-        rx.start();
-        tx.start();
+        receiver.start();
+        sender.start();
     }
 }
