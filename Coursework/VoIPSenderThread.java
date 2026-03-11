@@ -3,6 +3,8 @@ package NetworkingCourseWork1.Coursework;
 import java.math.BigInteger;
 import java.net.*;
 import java.nio.ByteBuffer;
+import uk.ac.uea.cmp.voip.*;
+
 
 
 public class VoIPSenderThread implements Runnable {
@@ -18,7 +20,7 @@ public class VoIPSenderThread implements Runnable {
     private static final String RECEIVER_IP     = "localhost";
 
     private AudioLayer     audioLayer;
-    private DatagramSocket socket;
+    private DatagramSocket4 socket;
     private InetAddress    receiverAddress;
     private volatile boolean        running;
 
@@ -26,7 +28,7 @@ public class VoIPSenderThread implements Runnable {
     public VoIPSenderThread(AudioLayer audioLayer) throws Exception {
         this.audioLayer = audioLayer;
 
-        socket = new DatagramSocket();
+        socket = new DatagramSocket4();
 
         receiverAddress = InetAddress.getByName(RECEIVER_IP);
     }
@@ -80,6 +82,7 @@ public class VoIPSenderThread implements Runnable {
         while (running) {
             try {
                 byte[] audioBlock = audioLayer.getBlock();
+
                 byte[] encrpyted = sec.encryption(audioBlock, new BigInteger[]{keys[0], keys[1]}); // encryption
 
                 if (encrpyted.length != CIPHERTEXT_SIZE) {
@@ -92,13 +95,24 @@ public class VoIPSenderThread implements Runnable {
                 ByteBuffer headerBuffer = ByteBuffer.allocate(HEADER_SIZE);
                 headerBuffer.putInt(sequenceNumber);
                 byte[] header = headerBuffer.array();
+                boolean want = false; // if true not encryption
+                int check = 0;
+                if(want){
+                    check = computeCheck(header, audioBlock);
 
-                int check = computeCheck(header, encrpyted);
+                }else{
+                    check = computeCheck(header, encrpyted);
+                }
 
 
                 ByteBuffer packetBuffer = ByteBuffer.allocate(PACKET_SIZE);
                 packetBuffer.put(header);
-                packetBuffer.put(encrpyted);
+                if(want){
+                    packetBuffer.put(audioBlock);
+                } else{
+                    packetBuffer.put(encrpyted);
+                }
+                //packetBuffer.put(encrpyted);
                 packetBuffer.putInt(check);
                 byte[] packetData = packetBuffer.array();
 
