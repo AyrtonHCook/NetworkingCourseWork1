@@ -3,19 +3,19 @@ import java.nio.ByteBuffer;
 
 public class AudioSenderChannel3 implements Runnable {
 
-    private final InetAddress destIP;
-    private final int port;
-    private DatagramSocket sock;
+    private final InetAddress targetIp;
+    private final int targetPort;
+    private DatagramSocket senderSocket;
 
-    private volatile boolean running = true;
-    private int seq = 0;
+    private volatile boolean isRunning = true;
+    private int packetNumber = 0;
 
-    private final SenderAudioLayer audioLayer;
+    private final SenderAudioLayer senderAudio;
 
-    public AudioSenderChannel3(SenderAudioLayer audioLayer, InetAddress destIP, int port) {
-        this.audioLayer = audioLayer;
-        this.destIP = destIP;
-        this.port = port;
+    public AudioSenderChannel3(SenderAudioLayer senderAudio, InetAddress targetIp, int targetPort) {
+        this.senderAudio = senderAudio;
+        this.targetIp = targetIp;
+        this.targetPort = targetPort;
     }
 
     public void start() {
@@ -23,33 +23,35 @@ public class AudioSenderChannel3 implements Runnable {
     }
 
     public void stop() {
-        running = false;
-        if (sock != null && !sock.isClosed()) sock.close();
+        isRunning = false;
+        if (senderSocket != null && !senderSocket.isClosed()) {
+            senderSocket.close();
+        }
     }
 
     @Override
     public void run() {
         try {
-            sock = new DatagramSocket();
+            senderSocket = new DatagramSocket();
         } catch (SocketException e) {
             System.out.println("Sender init failed: " + e.getMessage());
             return;
         }
 
-        while (running) {
+        while (isRunning) {
             try {
-                byte[] block = audioLayer.getBlock();
+                byte[] audioBlock = senderAudio.getBlock();
 
-                ByteBuffer bb = ByteBuffer.allocate(4 + block.length); // 4 bytes seq number rest audio data
-                bb.putInt(seq);
-                bb.put(block);
+                ByteBuffer buffer = ByteBuffer.allocate(4 + audioBlock.length);
+                buffer.putInt(packetNumber);
+                buffer.put(audioBlock);
 
-                byte[] payload = bb.array();
+                byte[] fullPacket = buffer.array();
 
-                DatagramPacket p = new DatagramPacket(payload, payload.length, destIP, port);
-                sock.send(p);
+                DatagramPacket sendPacket = new DatagramPacket(fullPacket, fullPacket.length, targetIp, targetPort);
+                senderSocket.send(sendPacket);
 
-                seq++;
+                packetNumber++;
 
             } catch (Exception e) {
                 System.out.println("Sender IO failed: " + e.getMessage());

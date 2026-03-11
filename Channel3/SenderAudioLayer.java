@@ -16,6 +16,8 @@ public class SenderAudioLayer {
     }
 
     public void close() {
-        try { recorder.close(); } catch (Exception e) {}
+        try {
+            recorder.close();
+        } catch (Exception e) {}
     }
 }
