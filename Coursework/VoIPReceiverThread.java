@@ -20,9 +20,9 @@ public class VoIPReceiverThread implements Runnable {
     // Set to one block duration (32ms) so the audio stays in sync.
     private static final int SOCKET_TIMEOUT_MS = AudioLayer.BLOCK_DURATION_MS;
 
-    private AudioLayer     audioLayer;
+    private AudioLayer audioLayer;
     private DatagramSocket socket;
-    private volatile boolean        running;
+    private volatile boolean running;
 
     // Creates a VoIPReceiverThread
     public VoIPReceiverThread(AudioLayer audioLayer) throws Exception {
@@ -150,3 +150,4 @@ public class VoIPReceiverThread implements Runnable {
         System.out.println("[VoIPReceiver] Receiver stopped.");
     }
 }
+
