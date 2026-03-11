@@ -3,7 +3,7 @@ public class VoIPChannel1 {
 
     public static void main(String[] args) throws Exception {
 
-        System.out.println("=== VoIP Channel 1 (DatagramSocket - ideal channel) ===");
+        System.out.println("VoIP Channel 1 (DatagramSocket with ideal conditions)");
         System.out.println("Starting audio layer...");
 
         // Audio Layer: shared by both sender and receiver
@@ -31,3 +31,4 @@ public class VoIPChannel1 {
         System.out.println("Done.");
     }
 }
+
