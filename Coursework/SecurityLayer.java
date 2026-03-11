@@ -8,17 +8,6 @@ public class SecurityLayer{
     public final int key_Bytes = 512;
     public final int key_Bits = key_Bytes * 8;
 
-    // getting greatest common dividor using euclidean algorithm
-    // it should return 1 if there are no common divider
-    // public static BigInteger GCD(BigInteger num1, BigInteger num2){
-    //     // check if remainder reaches 0 
-    //     if (num2 == BigInteger.ZERO){
-    //         // if true return the last non-zero remainder
-    //         return num1;
-    //     }
-    //     return GCD(num2, num1.remainder(num2));
-    // }    
-
     // extended euclidean algorithm
     public static BigInteger[] extendedGCD(BigInteger num1, BigInteger num2){
         BigInteger[] result = {num1, BigInteger.ONE, BigInteger.ZERO};

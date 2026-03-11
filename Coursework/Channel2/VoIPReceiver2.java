@@ -17,7 +17,8 @@ public class VoIPReceiver2 implements Runnable{
     public final int INTERLEAVER_SQUARE = VoIPSender2.INTERLEAVER_SQUARE;
     public final int HEADER_SIZE = PACKET_SIZE -BLOCK_SIZE;
     boolean running = true;
-    boolean started = false;
+
+    // buffer for incoming packets
     boolean[] check = new boolean[INTERLEAVER_SQUARE*2];
     byte[][] packet_Array = new byte[INTERLEAVER_SQUARE*2][PACKET_SIZE];
 
@@ -54,7 +55,7 @@ public class VoIPReceiver2 implements Runnable{
         // main loop
         int i = 0;
         int j = 0;
-        // buffer for incoming packets
+        
         int start = 0;
         boolean readFirst = true;
         while(running){
@@ -75,21 +76,25 @@ public class VoIPReceiver2 implements Runnable{
             int seq = buffer1.getInt();
             int index = seq%packet_Array.length;
             packet_Array[index] = buffer1.array();
-            check[index] = true;
+            check[index] = true; // indicate that packet is not lost
             System.out.printf("Packet %d received%n", seq);
 
+            // to check if a part of buffer is full
             int row = j/INTERLEAVER_SIZE;
             int col = j%INTERLEAVER_SIZE;
             int expectindex = col*INTERLEAVER_SIZE+row;
 
+            // when buffer is full
             if(i >= INTERLEAVER_SQUARE && expectindex%INTERLEAVER_SQUARE == 0){
+                // check which part of buffer to be sent
                 if(readFirst){
                     start = 0;
                 }else{
                     start = 16;
                 }
+                // loop through buffer
                 for(int k = start; k < INTERLEAVER_SQUARE+start; k++){
-                    if(check[k]){
+                    if(check[k]){ // if true there are packet to play
                         ByteBuffer payload = ByteBuffer.wrap(packet_Array[k]);
                         int cseq = payload.getInt();
                         seq_ArrayList.add(cseq);
@@ -111,24 +116,13 @@ public class VoIPReceiver2 implements Runnable{
                         }
                     }
                 }
-                Arrays.fill(check, start, INTERLEAVER_SQUARE+start, false);
-                readFirst = !readFirst;
+                Arrays.fill(check, start, INTERLEAVER_SQUARE+start, false); //reset check array
+                readFirst = !readFirst; // switch to different part of buffer
             }
             				
-            
             i++;
 		}
         receiving_Socket.close();
     }
     
-
-    public void playBlocks(){
-        while(running){
-            long now = System.nanoTime();
-            if(started){
-
-            }
-            
-       } 
-    }
 }

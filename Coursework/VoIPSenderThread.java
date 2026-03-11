@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 public class VoIPSenderThread implements Runnable {
 
     // Packet structure constants
-    public static final int HEADER_SIZE  = 4;   // 4 bytes for sequence number (int)
+    public static final int HEADER_SIZE  = 4;   // 4 bytes for sequence number
     public static final int CIPHERTEXT_SIZE = 512;
     public static final int CHECK_SIZE = 4;
     public static final int PACKET_SIZE  = HEADER_SIZE + CIPHERTEXT_SIZE + CHECK_SIZE; 
@@ -22,29 +22,27 @@ public class VoIPSenderThread implements Runnable {
     private InetAddress    receiverAddress;
     private volatile boolean        running;
 
-    // Creates a VoIPSenderThread
+    // constructor
     public VoIPSenderThread(AudioLayer audioLayer) throws Exception {
         this.audioLayer = audioLayer;
 
-        // Transport Layer: opens an unbound UDP socket
         socket = new DatagramSocket();
 
         receiverAddress = InetAddress.getByName(RECEIVER_IP);
     }
 
-    // Starts this thread running in the background
     public void start() {
         Thread t = new Thread(this);
         t.setDaemon(true);
         t.start();
     }
 
-    // Signals the sender loop
     public void stop() {
         running = false;
         socket.close();
     }
 
+    // for authentication
     private static final byte[] SHARED_SECRET = "secret".getBytes();
 
     public static int computeCheck(byte[] header, byte[] payload) {
@@ -65,18 +63,12 @@ public class VoIPSenderThread implements Runnable {
         return hash;
     }
 
-
-
-
-     // Main sender loop
-     //  1. Records a 512-byte audio block from the Audio Layer
-     //  2. Builds a 516-byte VoIP packet
-     //  3. Sends it via UDP to the receiver
     @Override
     public void run() {
         running = true;
         int sequenceNumber = 0;
 
+        // hardcoded public key for rsa
         System.out.println("[VoIPSender] Channel 1 sender started. Sending to "
                 + RECEIVER_IP + ":" + PORT);
         SecurityLayer sec = new SecurityLayer();
@@ -87,8 +79,7 @@ public class VoIPSenderThread implements Runnable {
 
         while (running) {
             try {
-                // Audio Layer interface
-                byte[] audioBlock = audioLayer.getBlock();  // blocks until 32ms block ready
+                byte[] audioBlock = audioLayer.getBlock();
                 byte[] encrpyted = sec.encryption(audioBlock, new BigInteger[]{keys[0], keys[1]}); // encryption
 
                 if (encrpyted.length != CIPHERTEXT_SIZE) {
@@ -111,9 +102,6 @@ public class VoIPSenderThread implements Runnable {
                 packetBuffer.putInt(check);
                 byte[] packetData = packetBuffer.array();
 
-
-
-                // Transport Layer interface
                 DatagramPacket packet = new DatagramPacket(
                         packetData, packetData.length, receiverAddress, PORT);
                 // test for authentication should drop all receiving packets if uncommented

@@ -72,6 +72,7 @@ public class VoIPSender2 implements Runnable {
 						e.printStackTrace();
 					}
 				}
+                // indicate which part of buffer to sent
 				if(readFirst){
                     start = 0;
                 } else{
@@ -93,6 +94,8 @@ public class VoIPSender2 implements Runnable {
 			    nextSendTime += BLOCK_DURATION;
                 readFirst = !readFirst;
 			}
+
+            // interleaver, get the order of current packet
             j = i%INTERLEAVER_SQUARE;
             int row = j/INTERLEAVER_SIZE;
             int col = j%INTERLEAVER_SIZE;
@@ -102,7 +105,6 @@ public class VoIPSender2 implements Runnable {
             if((i/INTERLEAVER_SQUARE)%2 == 1){ // if true first part not free
                 index += INTERLEAVER_SQUARE; // offset to read second part
             } 
-            //System.out.printf("INDEX: %d, %d%n", index, i);
             
             // record audio
             byte[] block = null;

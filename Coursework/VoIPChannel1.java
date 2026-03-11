@@ -6,16 +6,16 @@ public class VoIPChannel1 {
         System.out.println("=== VoIP Channel 1 (DatagramSocket - ideal channel) ===");
         System.out.println("Starting audio layer...");
 
-        // Audio Layer: shared by both sender and receiver
+        // Audio Layer
         AudioLayer audioLayer = new AudioLayer();
 
-        // VoIP Layer: sender and receiver as separate threads
+        // VoIP Layer
         VoIPSenderThread   sender   = new VoIPSenderThread(audioLayer);
         VoIPReceiverThread receiver = new VoIPReceiverThread(audioLayer);
 
         // Start both threads: full duplex
-        receiver.start();  // start receiver first to minimise chance of missing packets at the start
-        Thread.sleep(200); // wait 200ms for receiver to fully initialise to stop packets being missed at the start
+        receiver.start();
+        Thread.sleep(200);
         sender.start();
 
         System.out.println("VoIP system is now running. Press ENTER to stop transmitting.");
