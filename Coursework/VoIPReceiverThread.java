@@ -4,6 +4,7 @@ package NetworkingCourseWork1.Coursework;
 import java.math.BigInteger;
 import java.net.*;
 import java.nio.ByteBuffer;
+import uk.ac.uea.cmp.voip.*;
 
 
 public class VoIPReceiverThread implements Runnable {
@@ -20,14 +21,14 @@ public class VoIPReceiverThread implements Runnable {
     private static final int SOCKET_TIMEOUT_MS = AudioLayer.BLOCK_DURATION_MS;
 
     private AudioLayer audioLayer;
-    private DatagramSocket socket;
+    private DatagramSocket4 socket;
     private volatile boolean running;
 
     // Creates a VoIPReceiverThread
     public VoIPReceiverThread(AudioLayer audioLayer) throws Exception {
         this.audioLayer = audioLayer;
 
-        socket = new DatagramSocket(PORT);
+        socket = new DatagramSocket4(PORT);
 
         socket.setSoTimeout(SOCKET_TIMEOUT_MS);
     }
@@ -119,10 +120,17 @@ public class VoIPReceiverThread implements Runnable {
                 expectedSequenceNumber = receivedSeqNo + 1;
 
                 // decryption
-                byte[] decrypted = sec.decryption(encryptedBlock, keys);
-                System.out.println("decrypted length = " + decrypted.length);
+                boolean want = false; // if true no decrpytion
+                if(!want){
+                    byte[] decrypted = sec.decryption(encryptedBlock, keys);
+                    System.out.println("decrypted length = " + decrypted.length);
+                    audioLayer.playBlock(decrypted);
+                } else{
+                    audioLayer.playBlock(encryptedBlock);
+                }
 
-                audioLayer.playBlock(decrypted);
+
+
 
             } catch (SocketTimeoutException e) {
                 // If no packet arrived within 32ms play silence to keep audio timing
